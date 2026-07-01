@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IntentClassify</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
+</head>
+<body>
+  <button class="sidebar-toggle" type="button" aria-label="Toggle sidebar" title="Toggle sidebar">
+    <span data-icon="chevron-right"></span>
+  </button>
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('input_page') }}">
+      <span class="brand-icon" data-icon="shopping-bag"></span>
+      <span>IntentClassify</span>
+    </a>
+
+    <nav class="nav">
+      <a class="nav-link {{ 'active' if page == 'input' else '' }}" href="{{ url_for('input_page') }}">
+        <span data-icon="edit-3"></span> Analisis Input
+      </a>
+      <a class="nav-link {{ 'active' if page in ['upload','preview','summary','results','download'] else '' }}" href="{{ url_for('dataset_upload') }}">
+        <span data-icon="database"></span> Analisis Dataset
+      </a>
+      <a class="nav-link {{ 'active' if page == 'about' else '' }}" href="{{ url_for('about') }}">
+        <span data-icon="info"></span> Tentang Model
+      </a>
+    </nav>
+
+    <section class="model-badge">
+      <p>Model</p>
+      <strong>{{ model_name }}</strong>
+      <span>{{ model_version }}</span>
+    </section>
+  </aside>
+
+  <main class="main">
+    {% block content %}
+    {% if page == 'input' %}
+      <section class="page-head">
+        <span class="page-icon" data-icon="edit-3"></span>
+        <div>
+          <h1>Analisis Input</h1>
+          <p>Masukkan ulasan pelanggan untuk dianalisis menggunakan Zero-Shot Learning mDeBERTa-v3.</p>
+        </div>
+      </section>
+
+      <section class="panel input-panel">
+        <h2>1. Masukkan Ulasan Pelanggan</h2>
+        <textarea id="reviewInput" maxlength="1000" autofocus>Barang sampai cepat, packing rapi banget.</textarea>
+        <div class="input-actions">
+          <button class="btn primary" id="analyzeBtn" type="button"><span data-icon="search"></span> Analisis</button>
+          <span id="charCount">43 / 1000</span>
+          <button class="btn ghost" id="clearBtn" type="button"><span data-icon="trash-2"></span> Bersihkan</button>
+        </div>
+      </section>
+
+      <section class="grid two">
+        <article class="panel">
+          <h2>2. Hasil Prediksi Utama</h2>
+          <div class="prediction-card" id="predictionCard">
+            <span class="large-category-icon" data-icon="truck"></span>
+            <div>
+              <p>Kategori Utama (Prediksi)</p>
+              <h3>Kecepatan Pengiriman</h3>
+              <p>Confidence Score</p>
+              <strong>92%</strong>
+              <div class="progress"><i style="width:92%"></i></div>
+            </div>
+          </div>
+          <div class="notice success" id="interpretation">
+            <span data-icon="check-circle"></span>
+            <p><strong>Interpretasi</strong><br>Ulasan ini paling sesuai dengan kategori Kecepatan Pengiriman dengan tingkat keyakinan 92%.</p>
+          </div>
+        </article>
+
+        <article class="panel">
+          <h2>3. Ranking Semua Kategori</h2>
+          <div class="ranking-table" id="rankingTable">
+            {% for label in ['Kecepatan Pengiriman','Keamanan Kemasan','Pelayanan Toko','Kualitas Barang'] %}
+              <div class="rank-row">
+                <span class="rank-num">{{ loop.index }}</span>
+                <strong>{{ label }}</strong>
+                <div class="progress"><i style="width:{{ [92,85,22,15][loop.index0] }}%"></i></div>
+                <b>{{ [92,85,22,15][loop.index0] }}%</b>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="notice info"><span data-icon="info"></span> Semakin tinggi confidence score, semakin kuat model mengaitkan ulasan dengan kategori tersebut.</div>
+        </article>
+
+        <article class="panel">
+          <h2>4. Analisis Sentimen</h2>
+          <div class="prediction-card sentiment-card" id="sentimentCard">
+            <span class="large-category-icon" data-icon="check-circle"></span>
+            <div>
+              <p>Sentimen Utama</p>
+              <h3>Positif</h3>
+              <p>Confidence Sentimen</p>
+              <strong>88%</strong>
+              <div class="progress"><i style="width:88%"></i></div>
+            </div>
+          </div>
+          <div class="ranking-table sentiment-ranking" id="sentimentRankingTable">
+            {% for label in ['Positif','Netral','Negatif'] %}
+              <div class="rank-row">
+                <span class="rank-num">{{ loop.index }}</span>
+                <strong>{{ label }}</strong>
+                <div class="progress"><i style="width:{{ [88,34,12][loop.index0] }}%"></i></div>
+                <b>{{ [88,34,12][loop.index0] }}%</b>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="notice success" id="sentimentInterpretation">
+            <span data-icon="check-circle"></span>
+            <p><strong>Insight Sentimen</strong><br>Ulasan ini cenderung Positif dengan tingkat keyakinan 88%.</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel model-info-row">
+        <h2><span data-icon="lightbulb"></span> Informasi Model</h2>
+        <p>Model mDeBERTa-v3 Zero-Shot Learning membaca ulasan pelanggan untuk menghasilkan dua keluaran: intent ulasan dan sentimen ulasan.</p>
+        <div class="model-info-grid">
+          <section class="model-category-group">
+            <h3>Kategori Intent</h3>
+            <div class="category-strip intent-strip">
+              {% for label in labels %}
+                <div class="category-pill" style="--accent: {{ meta[label].color }}; --soft: {{ meta[label].soft }}">
+                  <span data-icon="{{ meta[label].icon }}"></span>
+                  <strong>{{ label }}</strong>
+                  <small>{{ meta[label].description }}</small>
+                </div>
+              {% endfor %}
+            </div>
+          </section>
+          <section class="model-category-group">
+            <h3>Kategori Sentimen</h3>
+            <div class="category-strip sentiment-strip">
+              {% for label in sentiment_labels %}
+                <div class="category-pill" style="--accent: {{ sentiment_meta[label].color }}; --soft: {{ sentiment_meta[label].soft }}">
+                  <span data-icon="{{ sentiment_meta[label].icon }}"></span>
+                  <strong>{{ label }}</strong>
+                  <small>{{ 'Ulasan bernada puas atau apresiatif.' if label == 'Positif' else 'Ulasan biasa atau informatif.' if label == 'Netral' else 'Ulasan berisi keluhan atau kekecewaan.' }}</small>
+                </div>
+              {% endfor %}
+            </div>
+          </section>
+        </div>
+      </section>
+      <div class="footnote"><span data-icon="shield"></span> Data yang Anda masukkan tidak disimpan dan hanya digunakan untuk analisis sementara.</div>
+    {% endif %}
+
+    {% if page in ['upload','preview','summary','results','download'] %}
+      <div class="crumb">Analisis Dataset <span data-icon="chevron-right"></span> <strong>{{ {'upload':'Upload Dataset','preview':'Preview Data','summary':'Ringkasan Hasil','results':'Hasil Klasifikasi','download':'Download Hasil'}[page] }}</strong></div>
+      <section class="dataset-shell">
+        <section class="page-head compact">
+          <span class="page-icon" data-icon="{{ 'upload-cloud' if page == 'upload' else 'pie-chart' if page in ['summary','results'] else 'download' if page == 'download' else 'file-text' }}"></span>
+          <div>
+            <h1>{{ {'upload':'Upload Dataset','preview':'Preview Data','summary':'Ringkasan Hasil','results':'Hasil Klasifikasi','download':'Download Hasil'}[page] }}</h1>
+            <p>{{ {'upload':'Unggah dataset ulasan pelanggan dalam format CSV atau XLSX untuk memulai proses analisis.','preview':'Menampilkan seluruh data yang diunggah sebelum proses klasifikasi.','summary':'Menampilkan ringkasan distribusi dan statistik hasil klasifikasi dari seluruh dataset.','results':'Menampilkan hasil prediksi intent untuk setiap ulasan beserta tingkat keyakinan model.','download':'Unduh hasil klasifikasi dan ringkasan analisis dalam format yang Anda butuhkan.'}[page] }}</p>
+          </div>
+        </section>
+        {% include 'wizard.html' %}
+
+        {% if page == 'upload' %}
+          {% if error %}<div class="notice danger">{{ error }}</div>{% endif %}
+          <form class="upload-zone" action="{{ url_for('dataset_upload') }}" method="post" enctype="multipart/form-data">
+            <input id="datasetFile" name="dataset" type="file" accept=".csv,.xlsx">
+            <span data-icon="upload-cloud"></span>
+            <h2>Drag & drop file di sini</h2>
+            <p>atau</p>
+            <label class="btn primary" for="datasetFile"><span data-icon="file-plus"></span> Pilih File</label>
+            <small>Format yang didukung: CSV, XLSX<br>Maksimal ukuran file: 50MB</small>
+            <button class="btn primary submit-upload" type="submit">Proses Dataset <span data-icon="arrow-right"></span></button>
+          </form>
+          <section class="grid two">
+            <article class="panel">
+              <h2>File yang Dipilih</h2>
+              <div class="selected-file"><span data-icon="file-spreadsheet"></span><strong id="selectedFileName">Belum ada file</strong><small id="selectedFileSize">-</small></div>
+              <dl class="info-list">
+                <dt>Tipe File</dt><dd id="selectedFileType">-</dd>
+                <dt>Ukuran File</dt><dd id="selectedFileSize2">-</dd>
+                <dt>Tanggal Upload</dt><dd>{{ none }}</dd>
+              </dl>
+            </article>
+            <article class="panel">
+              <h2><span data-icon="clipboard-check"></span> Kriteria Dataset</h2>
+              <ul class="check-list">
+                <li>Memiliki minimal 1 kolom berisi ulasan.</li>
+                <li>Format file harus CSV atau XLSX.</li>
+                <li>Tidak boleh kosong.</li>
+                <li>Disarankan menggunakan encoding UTF-8.</li>
+                <li>Ukuran file maksimal 50MB.</li>
+              </ul>
+              <div class="sample-box"><strong>Contoh Struktur Data</strong><table><tr><th>review</th></tr><tr><td>Barang bagus dan original</td></tr><tr><td>Pengiriman sangat lama</td></tr></table></div>
+            </article>
+          </section>
+        {% endif %}
+
+        {% if page == 'preview' %}
+          <section class="stat-grid four">
+            <article class="stat"><span data-icon="file-text"></span><p>Total Data</p><strong>{{ summary.total }}</strong><small>ulasan</small></article>
+            <article class="stat"><span data-icon="file-text"></span><p>Kolom Review</p><strong>1</strong></article>
+            <article class="stat warn"><span data-icon="alert-circle"></span><p>Missing Value (Kosong)</p><strong>0</strong></article>
+            <article class="stat purple"><span data-icon="type"></span><p>Panjang Rata-rata Ulasan</p><strong>{{ summary.avg_length }} kata</strong></article>
+          </section>
+          <section class="grid preview-grid">
+            <article class="panel">
+              <h2>Data Preview</h2>
+              <p>Berikut adalah preview seluruh data ulasan pelanggan.</p>
+              {% include 'table_preview.html' %}
+            </article>
+            <aside class="side-stack">
+              {% include 'length_chart.html' %}
+              <article class="panel"><h2>Sampel Data Acak</h2><ul class="dot-list">{% for row in data.rows[:5] %}<li>{{ row.review }}</li>{% endfor %}</ul></article>
+            </aside>
+          </section>
+        {% endif %}
+
+        {% if page == 'summary' %}
+          {% include 'summary_content.html' %}
+        {% endif %}
+
+        {% if page == 'results' %}
+          <section class="stat-grid five">
+            <article class="stat"><span data-icon="file-text"></span><p>Total Data</p><strong>{{ summary.total }}</strong><small>ulasan</small></article>
+            <article class="stat green"><span data-icon="check-circle"></span><p>Berhasil <br> Diklasifikasi</p><strong>{{ summary.categorized }} <br> (100%)</strong></article>
+            <article class="stat purple"><span data-icon="percent"></span><p>Rata-rata Confidence</p><strong>{{ summary.avg_confidence }}%</strong></article>
+            <article class="stat orange"><span data-icon="bar-chart-3"></span><p>Kategori Diprediksi</p><strong>{{ summary.category_count }}</strong><small>kategori</small></article>
+            <article class="stat cyan"><span data-icon="clock"></span><p>Waktu Proses</p><strong>{{ format_elapsed(summary.elapsed) }}</strong><small>menit</small></article>
+          </section>
+          <section class="results-layout">
+            <article class="panel results-table-card">
+              <div class="panel-toolbar">
+                <div><h2>Hasil Prediksi</h2><p>Daftar ulasan beserta hasil prediksi intent dan confidence score.</p></div>
+                <form class="search-form" method="get"><input name="q" value="{{ query }}" placeholder="Cari review..."><button class="btn ghost"><span data-icon="search"></span></button></form>
+              </div>
+              {% include 'table_results.html' %}
+            </article>
+            <aside class="results-insights">
+              {% include 'donut_panel.html' %}
+              <article class="panel"><h2>Statistik Confidence Score</h2><p>Ringkasan tingkat keyakinan model.</p><dl class="metric-list"><dt>Confidence Tertinggi</dt><dd>{{ summary.highest_confidence }}%</dd><dt>Confidence Terendah</dt><dd>{{ summary.lowest_confidence }}%</dd><dt>Confidence Rata-rata</dt><dd>{{ summary.avg_confidence }}%</dd><dt>Ulasan &lt; 50% Confidence</dt><dd>{{ summary.low_confidence_count }}</dd></dl></article>
+            </aside>
+          </section>
+        {% endif %}
+
+        {% if page == 'download' %}
+          <section class="panel download-panel">
+            <h2>Unduh Hasil Analisis</h2>
+            <p>Pilih format file yang ingin Anda unduh.</p>
+            <a class="download-row green" href="{{ url_for('download_file', filetype='csv') }}"><span data-icon="file-spreadsheet"></span><div><strong>Download sebagai CSV</strong><small>Berisi hasil klasifikasi setiap ulasan dalam format CSV.</small></div><b><span data-icon="download"></span> Download CSV</b></a>
+            <a class="download-row green" href="{{ url_for('download_file', filetype='xlsx') }}"><span data-icon="file-spreadsheet"></span><div><strong>Download sebagai Excel</strong><small>Berisi hasil klasifikasi dalam format spreadsheet.</small></div><b><span data-icon="download"></span> Download Excel</b></a>
+            <a class="download-row red" href="{{ url_for('download_file', filetype='pdf') }}"><span data-icon="file-text"></span><div><strong>Download Laporan (PDF)</strong><small>Berisi ringkasan analisis, visualisasi, dan hasil klasifikasi.</small></div><b><span data-icon="download"></span> Download PDF</b></a>
+            <div class="notice info"><span data-icon="info"></span> Semua file akan diunduh sesuai dengan hasil analisis terbaru.</div>
+          </section>
+        {% endif %}
+
+        <div class="pager-actions">
+          {% if page != 'upload' %}<a class="btn ghost" href="{{ url_for({'preview':'dataset_upload','summary':'dataset_preview','results':'dataset_summary','download':'dataset_results'}[page]) }}"><span data-icon="arrow-left"></span> Back</a>{% else %}<span></span>{% endif %}
+          {% if page != 'download' %}<a class="btn primary" href="{{ url_for({'upload':'dataset_preview','preview':'dataset_summary','summary':'dataset_results','results':'dataset_download'}[page]) }}">Next <span data-icon="arrow-right"></span></a>{% endif %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if page == 'about' %}
+      <div class="crumb">Tentang Model <span data-icon="chevron-right"></span></div>
+      <section class="dataset-shell">
+        <section class="page-head compact">
+          <span class="page-icon" data-icon="info"></span>
+          <div><h1>Tentang Model</h1><p>Informasi detail mengenai model yang digunakan untuk klasifikasi intent dan analisis sentimen.</p></div>
+        </section>
+        <section class="grid two">
+          <article class="panel">
+            <h2>Informasi Model</h2>
+            <dl class="info-list">
+              <dt>Nama Model</dt><dd>mDeBERTa-v3 Zero-Shot</dd>
+              <dt>Versi Model</dt><dd>v1.0</dd>
+              <dt>Metode</dt><dd>Zero-Shot Learning</dd>
+              <dt>Arsitektur</dt><dd>mDeBERTa-v3 (Transformer)</dd>
+              <dt>Ukuran Model</dt><dd>~1.5B parameter</dd>
+              <dt>Bahasa</dt><dd>Multibahasa termasuk Bahasa Indonesia</dd>
+              <dt>Dikembangkan oleh</dt><dd>Microsoft / model MNLI-XNLI</dd>
+              <dt>Sumber Model</dt><dd>Folder lokal model_mdeberta_zero_shot</dd>
+            </dl>
+          </article>
+          <article class="panel">
+            <h2>Deskripsi Model</h2>
+            <p>mDeBERTa-v3 adalah model bahasa berbasis arsitektur Transformer yang dapat memahami konteks teks multibahasa.</p>
+            <p>Pada aplikasi ini, model digunakan dengan pendekatan Zero-Shot Learning untuk mengklasifikasikan intent tanpa perlu pelatihan ulang pada dataset spesifik.</p>
+            <p>Aplikasi juga menampilkan analisis sentimen untuk membaca kecenderungan emosi ulasan sebagai Positif, Netral, atau Negatif.</p>
+            <div class="notice info"><span data-icon="info"></span><p><strong>Zero-Shot Learning</strong><br>Model dapat mengklasifikasikan data ke kategori yang sudah didefinisikan sebelumnya.</p></div>
+          </article>
+          <article class="panel full-span">
+            <h2>Cara Kerja Model</h2>
+            <div class="workflow">
+              {% for title in ['Input Ulasan','Pemahaman Konteks','Prediksi Intent','Prediksi Sentimen'] %}
+                <div><span>{{ loop.index }}</span><strong>{{ title }}</strong></div>
+              {% endfor %}
+            </div>
+          </article>
+          <article class="panel full-span">
+            <h2>Kategori Analisis</h2>
+            <p>Hasil analisis menampilkan dua keluaran utama: intent untuk mengetahui topik ulasan, dan sentimen untuk membaca kecenderungan nada atau emosi ulasan.</p>
+            <div class="analysis-categories">
+              <section>
+                <h3>Intent Ulasan</h3>
+                {% for label in labels %}
+                  <div class="intent-row" style="--accent:{{ meta[label].color }};--soft:{{ meta[label].soft }}"><span data-icon="{{ meta[label].icon }}"></span><div><strong>{{ label }}</strong><p>{{ meta[label].description }}</p></div></div>
+                {% endfor %}
+              </section>
+              <section>
+                <h3>Sentimen Ulasan</h3>
+                {% for label in sentiment_labels %}
+                  <div class="intent-row" style="--accent:{{ sentiment_meta[label].color }};--soft:{{ sentiment_meta[label].soft }}">
+                    <span data-icon="{{ sentiment_meta[label].icon }}"></span>
+                    <div>
+                      <strong>{{ label }}</strong>
+                      <p>{{ 'Pengalaman baik, kepuasan, atau apresiasi terhadap produk dan layanan.' if label == 'Positif' else 'Ulasan informatif atau biasa tanpa kecenderungan emosi yang kuat.' if label == 'Netral' else 'Keluhan, kekecewaan, atau masalah pada produk, pengiriman, kemasan, dan layanan.' }}</p>
+                    </div>
+                  </div>
+                {% endfor %}
+              </section>
+            </div>
+          </article>
+        </section>
+        <div class="notice info"><span data-icon="info"></span> Performa model dapat dipengaruhi oleh kualitas data input dan deskripsi kategori yang digunakan.</div>
+      </section>
+    {% endif %}
+    {% endblock %}
+  </main>
+</body>
+</html>

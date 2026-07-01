@@ -1,0 +1,9 @@
+{
+  "candidate_labels": [
+    "Kualitas Barang",
+    "Keamanan Kemasan",
+    "Kecepatan Pengiriman",
+    "Pelayanan Toko"
+  ],
+  "hypothesis_template": "Ulasan ini berfokus secara tajam pada topik {}."
+}

@@ -1,0 +1,16 @@
+<table class="data-table">
+  <thead><tr><th>No</th><th>Review</th><th>Panjang (kata)</th></tr></thead>
+  <tbody>
+    {% for row in data.rows %}
+      <tr><td>{{ data.start + loop.index0 }}</td><td>{{ row.review }}</td><td>{{ row.length }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<div class="table-foot">
+  <p>Menampilkan {{ data.start }} - {{ data.end }} dari {{ data.total }} data</p>
+  <div class="mini-pages">
+    {% if data.page > 1 %}<a href="?page={{ data.page - 1 }}">«</a>{% endif %}
+    <span>{{ data.page }}</span>
+    {% if data.page < data.total_pages %}<a href="?page={{ data.page + 1 }}">»</a>{% endif %}
+  </div>
+</div>
