@@ -1,8 +1,0 @@
-<ol class="wizard">
-  {% for num, label in [(1,'Upload Dataset'),(2,'Preview Data'),(3,'Ringkasan Hasil'),(4,'Hasil Klasifikasi'),(5,'Download Hasil')] %}
-    <li class="{{ 'done' if num < step else 'active' if num == step else '' }}">
-      <span>{{ '✓' if num < step else num }}</span>
-      <p>{{ num }}. {{ label }}</p>
-    </li>
-  {% endfor %}
-</ol>
