@@ -1,0 +1,117 @@
+<section class="stat-grid five">
+  <article class="stat">
+    <span data-icon="file-text"></span>
+    <p>Total Data</p>
+    <strong>{{ summary.total }}</strong>
+    <small>ulasan</small>
+  </article>
+
+  <article class="stat green">
+    <span data-icon="check-circle"></span>
+    <p>Data Terkategori</p>
+    <strong>{{ summary.categorized }} (100%)</strong>
+  </article>
+
+  <article class="stat orange">
+    <span data-icon="hash"></span>
+    <p>Jumlah Kategori</p>
+    <strong>{{ summary.category_count }}</strong>
+    <small>kategori</small>
+  </article>
+
+  <article class="stat purple">
+    <span data-icon="message-square"></span>
+    <p>Rata-rata <br> Panjang Ulasan</p>
+    <strong>{{ summary.avg_length }}</strong>
+    <small>kata</small>
+  </article>
+
+  <article class="stat cyan">
+    <span data-icon="clock"></span>
+    <p>Waktu Proses</p>
+    <strong>{{ format_elapsed(summary.elapsed) }}</strong>
+    <small>menit</small>
+  </article>
+</section>
+
+<section class="summary-layout">
+
+  {% include 'donut_panel.html' %}
+
+  <article class="panel summary-card">
+    <h2>Distribusi Sentimen</h2>
+
+    <div class="sentiment-list">
+      {% for item in summary.sentiment_distribution %}
+      <div class="sentiment-row" style="--accent:{{ item.color }};--soft:{{ item.soft }}">
+        <span data-icon="{{ item.icon }}"></span>
+        <strong>{{ item.label }}</strong>
+        <div class="progress"><i style="width:{{ item.percent }}%;background:{{ item.color }}"></i></div>
+        <b>{{ item.count }} ({{ item.percent }}%)</b>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="panel summary-card">
+    <h2>Word Cloud <small>(Semua Ulasan)</small></h2>
+
+    <div class="word-cloud">
+      {% for item in summary.words %}
+      <span style="font-size:{{ item.weight }}px">
+        {{ item.word }}
+      </span>
+      {% endfor %}
+    </div>
+
+    <div class="notice info">
+      Semakin besar ukuran kata, semakin sering kata tersebut muncul.
+    </div>
+  </article>
+
+  <article class="panel insight summary-card">
+    <h2>Insight Utama</h2>
+
+    <ul class="check-list">
+      <li>Kategori dengan jumlah ulasan terbanyak adalah {{ summary.top_category.label if summary.top_category }}.</li>
+      <li>Sentimen paling dominan adalah {{ summary.top_sentiment.label if summary.top_sentiment }}.</li>
+      <li>Kata paling sering muncul ditampilkan pada word cloud.</li>
+      <li>Distribusi kategori membantu memantau intent pelanggan paling dominan.</li>
+      <li>Distribusi sentimen membantu melihat kecenderungan pengalaman pelanggan.</li>
+    </ul>
+  </article>
+
+  <article class="panel summary-table-card">
+    <h2>Statistik per Kategori</h2>
+
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Kategori</th>
+            <th>Jumlah Ulasan</th>
+            <th>Persentase</th>
+            <th>Contoh Kata Kunci</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in summary.distribution %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ item.label }}</td>
+            <td>{{ item.count }}</td>
+            <td>{{ item.percent }}%</td>
+            <td>
+              {% for keyword in item.keywords %}
+              <span class="chip">{{ keyword }}</span>
+              {% endfor %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+</section>
